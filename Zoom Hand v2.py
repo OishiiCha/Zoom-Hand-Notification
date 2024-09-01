@@ -18,12 +18,10 @@ class ZoomHandApp:
         self.start_connection_thread()
 
     def start_connection_thread(self):
-        """Start a thread that continuously attempts to find the Pico port."""
         self.connection_thread = threading.Thread(target=self.manage_connection, daemon=True)
         self.connection_thread.start()
 
     def manage_connection(self):
-        """Continuously manage the connection to the Pico device."""
         while True:
             if not self.ser:
                 self.find_pico_port()
@@ -39,21 +37,20 @@ class ZoomHandApp:
                     self.ser.close()
                     self.ser = None
                     self.device_connected = False
-                    self.update_indicator("orange")  # Set the indicator to inactive
-                    self.button.config(text="Raise hand for Zoom", bg="#007BFF")  # Reset button
+                    self.update_indicator("orange")
+                    self.button.config(text="Raise hand for Zoom", bg="#007BFF")
                     self.stop_flashing()
 
-            time.sleep(2)  # Check every 2 seconds to avoid excessive CPU usage
+            time.sleep(2)
 
     def find_pico_port(self):
-        """Look for the Pico device and establish a connection."""
         self.update_status("Looking for device...")
         ports = serial.tools.list_ports.comports()
         for port in ports:
             try:
                 s = serial.Serial(port.device, 9600, timeout=1)
-                time.sleep(2)  # Allow time for connection
-                s.write(b'PING\r')  # Send a simple command
+                time.sleep(2)
+                s.write(b'PING\r')
                 response = s.read_until().strip()
                 if response:
                     print(f"Connected to {port.device}")
@@ -76,15 +73,15 @@ class ZoomHandApp:
             print("Sent: OFF")
             self.button.config(text="Raise hand for Zoom", bg="#007BFF")
             self.led_on = False
-            self.update_indicator("orange")  # Amber for inactive
-            self.stop_flashing()  # Stop flashing effect
+            self.update_indicator("orange")
+            self.stop_flashing()
         else:
             self.ser.write(b'ON\r')
             self.ser.flush()
             print("Sent: ON")
             self.button.config(text="Lower hand for Zoom", bg="#007BFF")
             self.led_on = True
-            self.start_flashing()  # Start flashing effect
+            self.start_flashing()
 
     def start_flashing(self):
         self.flashing = True
@@ -97,7 +94,7 @@ class ZoomHandApp:
         if not self.led_on:
             return
 
-        flash_speed = 500  # Interval in milliseconds
+        flash_speed = 500
 
         def flash():
             if not self.flashing or not self.led_on:
@@ -120,8 +117,7 @@ class ZoomHandApp:
         self.root.title("Notify Speaker of Zoom Hands")
         self.root.configure(bg="white")
 
-        # Set the icon (optional)
-        icon_path = 'logo.ico'  # Replace with the correct path if needed
+        icon_path = self.resource_path('images/logo.ico')
 
         try:
             if os.path.exists(icon_path):
@@ -149,6 +145,13 @@ class ZoomHandApp:
 
         self.root.geometry("400x150")
         self.root.eval('tk::PlaceWindow . center')
+
+    def resource_path(self, relative_path):
+        try:
+            base_path = sys._MEIPASS
+        except Exception:
+            base_path = os.path.abspath(".")
+        return os.path.join(base_path, relative_path)
 
     def on_closing(self):
         if self.led_on and self.ser:
